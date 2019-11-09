@@ -1,2 +1,2 @@
-# Viber
-An open-cv algorithm for detecting and understanding volleyball pitch events.
+# Beaver
+Ball Beholder and volleyball events recognizer
