@@ -1,2 +1,2 @@
 # Beaver
-Ball Beholder and volleyball events recognizer
+Ball beholder and volleyball events recognizer
