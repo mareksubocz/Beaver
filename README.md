@@ -1,5 +1,5 @@
 <div align="center">
-	<a href="#"> <img width="600px" height="400px" src="img/beaver.png"></a>
+	<a href="#"> <img width="600px" height="400px" src="img/beaver2.png"></a>
 </div>
 
 ----------------------------------------------------------------
