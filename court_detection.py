@@ -6,9 +6,10 @@ from time import sleep
 img = cv.imread('img/field.jpg')
 cap = cv.VideoCapture('./voleybol.mp4')
 # vidObj = cv.VideoCapture(0)
-success = 1
-while success:
+while True:
     success, img = cap.read()
+    if not success:
+        break
     img = cv.resize(img, (800, 500))
     # img = cv.bilateralFilter(img, 9, 75, 75)
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
