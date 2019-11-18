@@ -27,6 +27,7 @@ sp = plt.subplot(3, 1, 1)
 sp.axis('off')
 
 img = cv.imread('img/field.jpg')
+
 #img = cv.cvtColor(img, cv.COLOR_RGB2BGR)
 # converting into hsv image
 hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
@@ -70,7 +71,6 @@ lowerLimit.append([171, 153, 128])
 upperLimit.append([182, 197, 217])
 lowerLimit.append([2, 36, 175])
 upperLimit.append([104, 132, 265])
-
 
 # Define a mask ranging from lower to uppper
 mask = 0
