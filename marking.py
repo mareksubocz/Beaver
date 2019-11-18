@@ -81,7 +81,7 @@ def markPlayers(mask, courtcontours,img):
 #End of markPlayers
 #Ball marking
 #Pewnie trzeba będzie dodać poprzednie lokalizacje piłki czy coś
-def markBall(maskball,img,previmg):
+def markBall(ballLowerLimit,ballUpperLimit,img,previmg):
     #Defining a kernel to do morphological operation in threshold image to get better output
     kernel = np.ones((5,5),np.uint8)
     contoursImage = img.copy()      
@@ -94,40 +94,43 @@ def markBall(maskball,img,previmg):
     #maskball = cv.dilate(maskball, kernel, iterations=5)
     #maskball = cv.erode(maskball, kernel, iterations=5)
     #Do masking
+    '''
     resball = cv.bitwise_and(img, img, mask=maskball)
     #convert to hsv to gray
     resball_bgr = cv.cvtColor(resball,cv.COLOR_HSV2BGR)
-    resball_gray = cv.cvtColor(resball,cv.COLOR_BGR2GRAY)
+    resball_gray = cv.cvtColor(resball,cv.COLOR_BGR2GRAY)'''
 
 
    
-    thresh = cv.threshold(delta,15,255,cv.THRESH_BINARY)[1]
+    thresh = cv.threshold(delta,10,255,cv.THRESH_BINARY)[1]
     
-    thresh = cv.dilate(thresh, kernel, iterations=3)
-    thresh = cv.erode(thresh, kernel, iterations=1)
+    thresh = cv.dilate(thresh, kernel, iterations=5)
+    thresh = cv.erode(thresh, kernel, iterations=3)
     #thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
     font = cv.FONT_HERSHEY_SIMPLEX
     #find contours in threshold image     
-    contoursss,hierarchy = cv.findContours(thresh,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+    contoursss,hierarchy = cv.findContours(thresh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
     nzCountball = []
     for c in contoursss:
             x,y,w,h = cv.boundingRect(c)
             #Check for ball
-            if(8>w>=3 and 8>h>= 3):
+            if(2>w>=1 and 2>h>= 1):
                 ball_img = img[y:y+h,x:x+w]
                 ball_hsv = cv.cvtColor(ball_img,cv.COLOR_BGR2HSV)
                 #white ball  detection
-                maskball = cv.inRange(ball_hsv, np.array(lowerLimit[2]), np.array(upperLimit[2]))
+                maskball = cv.inRange(ball_hsv, np.array(ballLowerLimit), np.array(ballUpperLimit))
                 res3 = cv.bitwise_and(ball_img, ball_img, mask=maskball)
                 res3 = cv.cvtColor(res3,cv.COLOR_HSV2BGR)
                 res3 = cv.cvtColor(res3,cv.COLOR_BGR2GRAY)
                 nzCountball.append(cv.countNonZero(res3))
+            else:
+                 nzCountball.append(0)
     if len(nzCountball)!=0:
         x,y,w,h = cv.boundingRect(contoursss[nzCountball.index(max(nzCountball))])
         # show football
         cv.putText(contoursImage, 'Pilka', (x-2, y-2), font, 0.8, (0,255,0), 2, cv.LINE_AA)
         cv.rectangle(contoursImage,(x,y),(x+w,y+h),(0,255,0),3)
-    return thresh
+    return contoursImage
 #end of showBall
 
 
@@ -146,8 +149,6 @@ upperLimit.append([180, 70, 255])
 lowerLimit.append([1, 24, 18] )
 upperLimit.append([148, 265, 84])
 #Ball [16, 44, 149] [32, 105, 265]  [86, 19, 131] [97, 84, 246]
-lowerLimit.append([0, 0, 0])
-upperLimit.append( [0, 0, 0])
 lowerLimit.append([15, 105, 64] )
 upperLimit.append([30, 217, 131] )
 #Background 
@@ -233,8 +234,7 @@ while True:
                             (0, 0, 255), thickness=4)
     '''
     maskball = cv.inRange(hsv, np.array(lowerLimit[2]), np.array(upperLimit[2]))
-    maskball +=cv.inRange(hsv, np.array(lowerLimit[3]), np.array(upperLimit[3]))
-    contoursImage = markBall(maskball,img,previmg)
+    contoursImage = markBall(lowerLimit[2],upperLimit[2],img,previmg)
     
     
     #Show results
