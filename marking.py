@@ -2,7 +2,8 @@ import cv2 as cv
 import numpy as np
 from numpy.core.numeric import bitwise_not
 from time import sleep
-
+import imutils
+import math
 #Players
 
 
@@ -81,9 +82,9 @@ def markPlayers(mask, courtcontours,img):
 #End of markPlayers
 #Ball marking
 #Pewnie trzeba będzie dodać poprzednie lokalizacje piłki czy coś
-def markBall(ballLowerLimit,ballUpperLimit,img,previmg):
+def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx,prevy,prevw,prevh):
     #Defining a kernel to do morphological operation in threshold image to get better output
-    kernel = np.ones((5,5),np.uint8)
+    kernel = np.ones((10,10),np.uint8)
     contoursImage = img.copy()      
     
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
@@ -100,37 +101,96 @@ def markBall(ballLowerLimit,ballUpperLimit,img,previmg):
     resball_bgr = cv.cvtColor(resball,cv.COLOR_HSV2BGR)
     resball_gray = cv.cvtColor(resball,cv.COLOR_BGR2GRAY)'''
 
-
-   
-    thresh = cv.threshold(delta,10,255,cv.THRESH_BINARY)[1]
     
-    thresh = cv.dilate(thresh, kernel, iterations=5)
-    thresh = cv.erode(thresh, kernel, iterations=3)
-    #thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+    #res =  cv.multiply(maskball,delta,10)
+    #res = curres + prevres
+    for threshold in range(5,200,5):
+        thresh = cv.threshold(delta,threshold,255,cv.THRESH_BINARY)[1]
+        thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+        thresh = cv.dilate(thresh, kernel, iterations=1)
+        thresh = cv.erode(thresh, kernel, iterations=1)
+        whiteness = cv.countNonZero(thresh)
+        if whiteness < 12000:
+            break
+    
+    #curthresh = thresh.copy()
+    #thresh += prevthresh
     font = cv.FONT_HERSHEY_SIMPLEX
-    #find contours in threshold image     
-    contoursss,hierarchy = cv.findContours(thresh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE)
+    
+    #find contours in threshold image of movement     
+    contoursss,hierarchy = cv.findContours(thresh,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+    
+    resball = cv.bitwise_and(img, img, mask=maskball)
+    resball = cv.cvtColor(resball,cv.COLOR_HSV2BGR)
+    resball_gray = cv.cvtColor(resball, cv.COLOR_BGR2GRAY)
+    colthresh = cv.threshold(resball_gray,10,255,cv.THRESH_BINARY)[1]
+    colthresh = cv.dilate(colthresh, kernel, iterations=1)
+    colthresh = cv.erode(colthresh, kernel, iterations=1)
+    
+    colthresh = cv.multiply(colthresh,thresh,5) + colthresh
+    colthresh = cv.dilate(colthresh, kernel, iterations=2)
+    colthresh = cv.erode(colthresh, kernel, iterations=1)
+    curthresh = colthresh.copy()
+    #prevthresh = cv.dilate(prevthresh, kernel, iterations=2)
+    colthresh += prevthresh
+    #find contours in threshold image of colors
+    contourss,hierarchy = cv.findContours(colthresh,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
+    #contourss+=contoursss
     nzCountball = []
-    for c in contoursss:
+    for c in contourss:
             x,y,w,h = cv.boundingRect(c)
+            if cv.contourArea(c) > 1000:
+                nzCountball.append(0)
+                continue
             #Check for ball
-            if(2>w>=1 and 2>h>= 1):
+            if(150>w>5 and 150>h>5):
                 ball_img = img[y:y+h,x:x+w]
                 ball_hsv = cv.cvtColor(ball_img,cv.COLOR_BGR2HSV)
-                #white ball  detection
                 maskball = cv.inRange(ball_hsv, np.array(ballLowerLimit), np.array(ballUpperLimit))
                 res3 = cv.bitwise_and(ball_img, ball_img, mask=maskball)
                 res3 = cv.cvtColor(res3,cv.COLOR_HSV2BGR)
                 res3 = cv.cvtColor(res3,cv.COLOR_BGR2GRAY)
-                nzCountball.append(cv.countNonZero(res3))
+                
+                dist = math.sqrt((prevx-x-w/2)**2 + (prevy-y-h/2)**2)
+                #Prioritising countours with higher nzCountball
+                nzCountball.append(cv.countNonZero(res3)*50 - dist*5)
             else:
-                 nzCountball.append(0)
+                nzCountball.append(0)
     if len(nzCountball)!=0:
-        x,y,w,h = cv.boundingRect(contoursss[nzCountball.index(max(nzCountball))])
-        # show football
-        cv.putText(contoursImage, 'Pilka', (x-2, y-2), font, 0.8, (0,255,0), 2, cv.LINE_AA)
-        cv.rectangle(contoursImage,(x,y),(x+w,y+h),(0,255,0),3)
-    return contoursImage
+        if max(nzCountball)>10:
+            x,y,w,h = cv.boundingRect(contourss[nzCountball.index(max(nzCountball))])
+            ballimgfinal = img[y:y+h,x:x+w]
+            ballhsvfinal = cv.cvtColor(ballimgfinal,cv.COLOR_BGR2HSV)
+            maskballfinal = cv.inRange(ballhsvfinal, np.array(ballLowerLimit), np.array(ballUpperLimit))
+            maskballfinal = cv.erode(maskballfinal,None, iterations = 1)
+            maskballfinal = cv.dilate(maskballfinal,None, iterations = 1)
+            cntrs = cv.findContours(maskballfinal, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+            cntrs = imutils.grab_contours(cntrs)
+            if len(cntrs) > 0:
+                cball = max(cntrs, key = cv.contourArea)
+                x1,y1,w1,h1 = cv.boundingRect(cball)
+            
+                # show ball
+                cv.putText(contoursImage, 'Pilka', (x-2, y-2), font, 0.8, (0,255,0), 2, cv.LINE_AA)
+                cv.rectangle(contoursImage,(x+x1,y+y1),(x+x1+w1,y+y1+h1),(0,255,0),3)
+                prevx = x+x1
+                prevy = y+y1
+                prevw = w1
+                prevh = h1
+            else:
+                cv.putText(contoursImage, 'Pilka', (x-2, y-2), font, 0.8, (255,0,0), 2, cv.LINE_AA)
+                cv.rectangle(contoursImage,(x,y),(x+w,y+h),(255,0,0),3)
+                prevx = x
+                prevy = y
+                prevw = w
+                prevh = h
+        else:
+            cv.putText(contoursImage, 'Pilka', (prevx-2, prevy-2), font, 0.8, (0,0,255), 2, cv.LINE_AA)
+            cv.rectangle(contoursImage,(prevx,prevy),(prevx+prevw,prevy+prevh),(0,0,255),3)
+    else:
+        cv.putText(contoursImage, 'Pilka', (prevx-2, prevy-2), font, 0.8, (0,0,255), 2, cv.LINE_AA)
+        cv.rectangle(contoursImage,(prevx,prevy),(prevx+prevw,prevy+prevh),(0,0,255),3)
+    return contoursImage, colthresh,curthresh, prevx, prevy, prevw, prevh
 #end of showBall
 
 
@@ -138,7 +198,7 @@ def markBall(ballLowerLimit,ballUpperLimit,img,previmg):
 
 
 img = cv.imread('field.jpg')
-cap = cv.VideoCapture('cut.mp4')
+cap = cv.VideoCapture('whole.mp4')
 # vidObj = cv.VideoCapture(0)
 #Manual HSV limits for colors, first two are colors of shirts of both teams
 lowerLimit= []
@@ -148,9 +208,16 @@ upperLimit.append([180, 70, 255])
 
 lowerLimit.append([1, 24, 18] )
 upperLimit.append([148, 265, 84])
-#Ball [16, 44, 149] [32, 105, 265]  [86, 19, 131] [97, 84, 246]
-lowerLimit.append([15, 105, 64] )
-upperLimit.append([30, 217, 131] )
+#Ball
+#[16, 44, 149] [32, 105, 265] 
+#[86, 19, 131] [97, 84, 246]  
+#[81, 10, 155] [94, 63, 234]  
+#[17, 46, 94] [31, 133, 221] 
+#[4, 37, 126] [21, 135, 227]
+#lowerLimit.append([5, 40, 70])
+#upperLimit.append([30, 200, 255])
+lowerLimit.append([10, 50, 160])
+upperLimit.append([30, 200, 255])
 #Background 
 lowerLimit.append([50, 40, 40])
 upperLimit.append([100, 255, 255])
@@ -167,12 +234,15 @@ mask = 0
 #x = 0 || 1 => team colors
 #x > 1 => background (hopefully won't be needed)
 success, previmg = cap.read()
-previmg = cv.resize(img, (800, 500))
+previmg = cv.resize(img, (1024, 600))
+prevthresh=np.zeros((600,1024),np.uint8)
+x,y,w,h= 900,400,1,1
+
 while True:
     success, img = cap.read()
     if not success:
         break
-    img = cv.resize(img, (800, 500))
+    img = cv.resize(img, (1024, 600))
     # img = cv.bilateralFilter(img, 9, 75, 75)
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
 
@@ -233,14 +303,17 @@ while True:
             cv.drawContours(contoursImage, hull, 0,
                             (0, 0, 255), thickness=4)
     '''
+    
     maskball = cv.inRange(hsv, np.array(lowerLimit[2]), np.array(upperLimit[2]))
-    contoursImage = markBall(lowerLimit[2],upperLimit[2],img,previmg)
+    contoursImage, thresh,prevthresh,x,y,w,h = markBall(lowerLimit[2],upperLimit[2],maskball,img,previmg,prevthresh,x,y,w,h)
     
     
     #Show results
     previmg = img.copy()
     cv.imshow('1', contoursImage)
-    cv.moveWindow('1', 200, 100)
+    cv.moveWindow('1', -30, 100)
+    cv.imshow('2', thresh)
+    cv.moveWindow('2', 900, 100)
     sleep(0.03)
     # cv.waitKey()
     # cv.namedWindow("1", cv.WINDOW_AUTOSIZE)
