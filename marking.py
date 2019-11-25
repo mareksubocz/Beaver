@@ -26,7 +26,7 @@ def markPlayers(mask, courtcontours,img):
     thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
 
-    #find contours in threshold image     
+    #find contours in threshold image
     contours,hierarchy = cv.findContours(thresh,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
 
 
@@ -77,7 +77,7 @@ def markPlayers(mask, courtcontours,img):
                     '''
                     cv.putText(contoursImage, 'Ktos', (x-2, y-2), font, 0.8, (0,255,0), 2, cv.LINE_AA)
                     cv.rectangle(contoursImage,(x,y),(x+w,y+h),(0,255,0),3)
-    return contoursImage         
+    return contoursImage
 
 #End of markPlayers
 #Ball marking
@@ -85,8 +85,8 @@ def markPlayers(mask, courtcontours,img):
 def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx,prevy,prevw,prevh):
     #Defining a kernel to do morphological operation in threshold image to get better output
     kernel = np.ones((10,10),np.uint8)
-    contoursImage = img.copy()      
-    
+    contoursImage = img.copy()
+
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     gray = cv.GaussianBlur(gray, (21, 21), 0)
     oldgray = cv.cvtColor(previmg, cv.COLOR_BGR2GRAY)
@@ -101,7 +101,7 @@ def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx
     resball_bgr = cv.cvtColor(resball,cv.COLOR_HSV2BGR)
     resball_gray = cv.cvtColor(resball,cv.COLOR_BGR2GRAY)'''
 
-    
+
     #res =  cv.multiply(maskball,delta,10)
     #res = curres + prevres
     for threshold in range(5,200,5):
@@ -112,21 +112,21 @@ def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx
         whiteness = cv.countNonZero(thresh)
         if whiteness < 12000:
             break
-    
+
     #curthresh = thresh.copy()
     #thresh += prevthresh
     font = cv.FONT_HERSHEY_SIMPLEX
-    
-    #find contours in threshold image of movement     
+
+    #find contours in threshold image of movement
     contoursss,hierarchy = cv.findContours(thresh,cv.RETR_TREE,cv.CHAIN_APPROX_SIMPLE)
-    
+
     resball = cv.bitwise_and(img, img, mask=maskball)
     resball = cv.cvtColor(resball,cv.COLOR_HSV2BGR)
     resball_gray = cv.cvtColor(resball, cv.COLOR_BGR2GRAY)
     colthresh = cv.threshold(resball_gray,10,255,cv.THRESH_BINARY)[1]
     colthresh = cv.dilate(colthresh, kernel, iterations=1)
     colthresh = cv.erode(colthresh, kernel, iterations=1)
-    
+
     colthresh = cv.multiply(colthresh,thresh,5) + colthresh
     colthresh = cv.dilate(colthresh, kernel, iterations=2)
     colthresh = cv.erode(colthresh, kernel, iterations=1)
@@ -150,7 +150,7 @@ def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx
                 res3 = cv.bitwise_and(ball_img, ball_img, mask=maskball)
                 res3 = cv.cvtColor(res3,cv.COLOR_HSV2BGR)
                 res3 = cv.cvtColor(res3,cv.COLOR_BGR2GRAY)
-                
+
                 dist = math.sqrt((prevx-x-w/2)**2 + (prevy-y-h/2)**2)
                 #Prioritising countours with higher nzCountball
                 nzCountball.append(cv.countNonZero(res3)*50 - dist*5)
@@ -169,7 +169,7 @@ def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx
             if len(cntrs) > 0:
                 cball = max(cntrs, key = cv.contourArea)
                 x1,y1,w1,h1 = cv.boundingRect(cball)
-            
+
                 # show ball
                 cv.putText(contoursImage, 'Pilka', (x-2, y-2), font, 0.8, (0,255,0), 2, cv.LINE_AA)
                 cv.rectangle(contoursImage,(x+x1,y+y1),(x+x1+w1,y+y1+h1),(0,255,0),3)
@@ -197,28 +197,28 @@ def markBall(ballLowerLimit,ballUpperLimit,maskball,img,previmg,prevthresh,prevx
 
 
 
-img = cv.imread('field.jpg')
-cap = cv.VideoCapture('whole.mp4')
+img = cv.imread('img/field.jpg')
+cap = cv.VideoCapture('clips/whole.mp4')
 # vidObj = cv.VideoCapture(0)
 #Manual HSV limits for colors, first two are colors of shirts of both teams
 lowerLimit= []
 upperLimit= []
 lowerLimit.append([0, 0, 171])
-upperLimit.append([180, 70, 255])  
+upperLimit.append([180, 70, 255])
 
 lowerLimit.append([1, 24, 18] )
 upperLimit.append([148, 265, 84])
 #Ball
-#[16, 44, 149] [32, 105, 265] 
-#[86, 19, 131] [97, 84, 246]  
-#[81, 10, 155] [94, 63, 234]  
-#[17, 46, 94] [31, 133, 221] 
+#[16, 44, 149] [32, 105, 265]
+#[86, 19, 131] [97, 84, 246]
+#[81, 10, 155] [94, 63, 234]
+#[17, 46, 94] [31, 133, 221]
 #[4, 37, 126] [21, 135, 227]
 #lowerLimit.append([5, 40, 70])
 #upperLimit.append([30, 200, 255])
 lowerLimit.append([10, 50, 160])
 upperLimit.append([30, 200, 255])
-#Background 
+#Background
 lowerLimit.append([50, 40, 40])
 upperLimit.append([100, 255, 255])
 
@@ -253,16 +253,16 @@ while True:
     # Orange range [3, 137, 244] [10, 174, 265]
     lower_orange = np.array([0, 120, 200])
     upper_orange = np.array([10, 200, 255])
-    
+
     # Cream range [-3, 70, 243] [6, 96, 265]
     lower_cream = np.array([0, 70, 240])
     upper_cream = np.array([1, 100, 255])
 
     # Define a mask ranging from lower to uppper
-    mask_orange = cv.inRange(hsv, lower_orange, upper_orange) + cv.inRange(hsv, lower_cream, upper_cream) 
+    mask_orange = cv.inRange(hsv, lower_orange, upper_orange) + cv.inRange(hsv, lower_cream, upper_cream)
     mask_1 = mask_orange.copy()
     mask_teal = cv.inRange(hsv, lower_teal, upper_teal)
-    
+
     contoursImage = img.copy()
     # caly parkiet
     # mask_court = cv.bitwise_or(mask_teal, mask_orange)
@@ -274,7 +274,7 @@ while True:
     mask_orange = cv.erode(mask_orange, kernel, iterations=5)
     # cv.imshow('mask', mask_orange)
 
-    
+
     contours, hierarchy = cv.findContours(
         mask_orange.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
 
@@ -303,11 +303,11 @@ while True:
             cv.drawContours(contoursImage, hull, 0,
                             (0, 0, 255), thickness=4)
     '''
-    
+
     maskball = cv.inRange(hsv, np.array(lowerLimit[2]), np.array(upperLimit[2]))
     contoursImage, thresh,prevthresh,x,y,w,h = markBall(lowerLimit[2],upperLimit[2],maskball,img,previmg,prevthresh,x,y,w,h)
-    
-    
+
+
     #Show results
     previmg = img.copy()
     cv.imshow('1', contoursImage)

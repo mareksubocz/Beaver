@@ -3,8 +3,8 @@ from numpy.core.numeric import bitwise_not
 from time import sleep
 import cv2 as cv
 
-img = cv.imread('field.jpg')
-cap = cv.VideoCapture('cut.mp4')
+img = cv.imread('img/field.jpg')
+cap = cv.VideoCapture('clips/cut.mp4')
 # vidObj = cv.VideoCapture(0)
 #Manual HSV limits for colors, first two are colors of shirts of both teams
 lowerLimit= []
