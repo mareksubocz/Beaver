@@ -36,15 +36,15 @@ def find_mask(img, lower_color, upper_color):
 
     # image to get better output.
     # Defining a kernel to do morphological operation in threshold
-    # kernel = np.ones((13, 13), np.uint8)
-    # thresh = cv.threshold(res_gray, 127, 255,
-    #                       cv.THRESH_BINARY_INV | cv.THRESH_OTSU)[1]
-    # thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
+    kernel = np.ones((13, 13), np.uint8)
+    thresh = cv.threshold(res_gray, 127, 255,
+                          cv.THRESH_BINARY_INV | cv.THRESH_OTSU)[1]
+    thresh = cv.morphologyEx(thresh, cv.MORPH_CLOSE, kernel)
 
     # thresh = cv.bitwise_not(thresh)
 
-    kernel = np.ones((5, 5), np.uint8)
-    mask = cv.erode(mask, kernel, iterations=5)
-    mask = cv.dilate(mask, kernel, iterations=5)
+    # kernel = np.ones((5, 5), np.uint8)
+    # mask = cv.erode(mask, kernel, iterations=5)
+    # mask = cv.dilate(mask, kernel, iterations=5)
 
     return mask
