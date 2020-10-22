@@ -6,4 +6,4 @@
 
 
 # Beaver
-Ball beholder and volleyball events recognizer
+Ball bEholder And Volleyball Events Recognizer
